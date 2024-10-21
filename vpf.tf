@@ -24,7 +24,25 @@ resource "aws_subnet" "this" {
   tags              = merge(local.common_tags, { Name = each.value[2] })
 }
 
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.this.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.this.id
+  }
+  tags = merge(local.common_tags, { Name = "Terraform ROUTE_TABLE_PUBLIC" })
 
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.this.id
+  tags   = merge(local.common_tags, { Name = "Terraform ROUTE_TABLE_PRIVATE" })
+}
+resource "aws_route_table_association" "this" {
+  for_each       = local.subnet_id
+  subnet_id      = each.value
+  route_table_id = substr(each.key, 0, 2) == "pub" ? aws_route_table.public.id : aws_route_table.private.id
+}
 # resource "aws_subnet" "public_a" {
 #   vpc_id            = aws_vpc.this.id
 #   cidr_block        = "192.168.0.0/24"
