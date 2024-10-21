@@ -12,10 +12,10 @@ resource "aws_internet_gateway" "this" {
 resource "aws_subnet" "this" {
 
   for_each = {
-    "pub_a" : ["192.168.1.0/24", "${var.region}a", "Terraform SUB_PUBLIC_a"]
-    "pub_b" : ["192.168.2.0/24", "${var.region}b", "Terraform SUB_PUBLIC_b"]
-    "pvt_a" : ["192.168.3.0/24", "${var.region}a", "Terraform SUB_PRIVATE_a"]
-    "pvt_b" : ["192.168.4.0/24", "${var.region}b", "Terraform SUB_PRIVATE_b"]
+    "pub_a" : ["192.168.1.0/24", "${var.region}a", "Public_a"]
+    "pub_b" : ["192.168.2.0/24", "${var.region}b", "Public_b"]
+    "pvt_a" : ["192.168.3.0/24", "${var.region}a", "Private_a"]
+    "pvt_b" : ["192.168.4.0/24", "${var.region}b", "Private_b"]
   }
 
   vpc_id            = aws_vpc.this.id
@@ -39,10 +39,15 @@ resource "aws_route_table" "private" {
   tags   = merge(local.common_tags, { Name = "Terraform ROUTE_TABLE_PRIVATE" })
 }
 resource "aws_route_table_association" "this" {
-  for_each       = local.subnet_id
+  for_each       = { for k, v in aws_subnet.this : v.tags.Name => v.id }
   subnet_id      = each.value
-  route_table_id = substr(each.key, 0, 2) == "pub" ? aws_route_table.public.id : aws_route_table.private.id
+  route_table_id = substr(each.key, 0, 3) == "Pub" ? aws_route_table.public.id : aws_route_table.private.id
 }
+
+output "idsubs" {
+  value = [for k, v in aws_subnet.this : v.tags.Name]
+}
+
 # resource "aws_subnet" "public_a" {
 #   vpc_id            = aws_vpc.this.id
 #   cidr_block        = "192.168.0.0/24"
